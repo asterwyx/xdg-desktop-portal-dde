@@ -22,6 +22,51 @@ struct ScreenCaptureInfo {
     QImage capturedImage {};
 };
 
+static inline QString fullShotFileName(QString format)
+{
+    auto getXdgPicturesDir = [=]() -> QString {
+        QString homeDir = qgetenv("HOME");
+        if (homeDir.isEmpty()) {
+            return "";
+        }
+        QString configHome = qgetenv("XDG_CONFIG_HOME");
+        if (configHome.isEmpty()) {
+            configHome = homeDir + QDir::separator() + ".config";
+        }
+        QFile dirsFile(configHome + QDir::separator() + "user-dirs.dirs");
+        if (dirsFile.open(QIODevice::ReadOnly)) {
+            QTextStream in(&dirsFile);
+            const QString prefix("XDG_PICTURES_DIR=");
+            while (!in.atEnd()) {
+                QString line = in.readLine().trimmed();
+                if (line.isEmpty() || line.startsWith('#')) {
+                    continue;
+                }
+                if (line.startsWith(prefix)) {
+                    line.replace(prefix, "");
+                    line.replace("\"", "");
+                    if (line.contains("$HOME")) {
+                        line.replace("$HOME", homeDir);
+                    }
+                    return line;
+                }
+            }
+        }
+        return "";
+    };
+
+    auto saveBasePath = getXdgPicturesDir();
+    QDir saveBaseDir(saveBasePath);
+    if (!saveBaseDir.exists()) return "";
+    QString picName;
+    if (format == "PNG") {
+        picName = "portal screenshot - " + QDateTime::currentDateTime().toString() + ".png";
+    } else {
+        return "";
+    }
+    return saveBaseDir.absoluteFilePath(picName);
+}
+
 ScreenshotPortalWayland::ScreenshotPortalWayland(PortalWaylandContext *context)
     : AbstractWaylandPortal(context)
 {
