@@ -17,6 +17,12 @@ PortalWaylandContext::PortalWaylandContext(QObject *parent)
     : QObject(parent)
     , QDBusContext()
     , m_screenCopyManager(new ScreenCopyManager(this))
+    , m_treelandCaptureManager(new TreeLandCaptureManager(this))
 {
     auto screenShotPortal = new ScreenshotPortalWayland(this);
+    connect(m_treelandCaptureManager, &TreeLandCaptureManager::activeChanged ,this , [this, screenShotPortal] {
+        if (m_treelandCaptureManager->isActive()) {
+            screenShotPortal->captureInteractively();
+        }
+    });
 }
