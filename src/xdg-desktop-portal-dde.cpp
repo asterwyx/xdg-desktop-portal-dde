@@ -5,9 +5,11 @@
 #include "ddesktopportal.h"
 #include "wayland/portalwaylandcontext.h"
 
+#include <pipewire/pipewire.h>
+#include <qstringliteral.h>
+
 #include <QApplication>
 #include <QDBusConnection>
-#include <qstringliteral.h>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(XdgDesktopDDE, "xdg-dde")
@@ -22,7 +24,7 @@ int main(int argc, char *argv[])
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     /* Disable X11 session management
     As XdgDesktopPortal is a QGuiApplication it connects to our X session manager.
-    By default Qt apps behave like "applications" and this can end up on our auto-restart list if the user saves their session.
+    By default, Qt apps behave like "applications" and this can end up on our auto-restart list if the user saves their session.
     */
     QCoreApplication::setAttribute(Qt::AA_DisableSessionManager);
 #endif
@@ -31,19 +33,25 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
     QApplication a(argc, argv);
-    a.setQuitOnLastWindowClosed(false);
+    QApplication::setQuitOnLastWindowClosed(false);
+
+    pw_init(&argc, &argv);
 
     QDBusConnection sessionBus = QDBusConnection::sessionBus();
     if (sessionBus.registerService(QStringLiteral("org.freedesktop.impl.portal.desktop.dde"))) {
         if (onWayland()) {
-            PortalWaylandContext *waylandContext = new PortalWaylandContext(&a);
+            auto waylandContext = new PortalWaylandContext(&a);
             if (sessionBus.registerObject(QStringLiteral("/org/freedesktop/portal/desktop"),
                                           waylandContext,
                                           QDBusConnection::ExportAdaptors)) {
                 qCDebug(XdgDesktopDDE) << "portal started on wayland";
             }
+            auto conn = QObject::connect(waylandContext, &PortalWaylandContext::pipewireIOError, &a, &QApplication::exit);
+            if (!conn) {
+                qCWarning(XdgDesktopDDE) << "IO error handler not connected, may not exit normally.";
+            }
         } else {
-            DDesktopPortal *desktopPortal = new DDesktopPortal(&a);
+            auto desktopPortal = new DDesktopPortal(&a);
             if (sessionBus.registerObject(QStringLiteral("/org/freedesktop/portal/desktop"),
                                           desktopPortal,
                                           QDBusConnection::ExportAdaptors)) {

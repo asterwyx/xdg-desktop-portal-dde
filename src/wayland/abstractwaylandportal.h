@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: 2024 UnionTech Software Technology Co., Ltd.
-//
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -13,7 +12,7 @@
 class AbstractWaylandPortal : public QDBusAbstractAdaptor
 {
 public:
-    AbstractWaylandPortal(PortalWaylandContext *context) : QDBusAbstractAdaptor(context), m_context(context) { }
+    explicit AbstractWaylandPortal(PortalWaylandContext *context) : QDBusAbstractAdaptor(context), m_context(context) { }
     QPointer<PortalWaylandContext> context() { return m_context; }
 
 private:

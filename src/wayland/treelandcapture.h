@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: 2024 UnionTech Software Technology Co., Ltd.
-//
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -19,7 +18,8 @@ public:
         , m_shmBuffer(nullptr)
         , m_pendingShmBuffer(nullptr)
         , m_flags(0)
-    { }
+    {
+    }
 
     ~TreeLandCaptureFrame() override
     {
@@ -35,7 +35,10 @@ Q_SIGNALS:
     void failed();
 
 protected:
-    void treeland_capture_frame_v1_buffer(uint32_t format, uint32_t width, uint32_t height, uint32_t stride) override;
+    void treeland_capture_frame_v1_buffer(uint32_t format,
+                                          uint32_t width,
+                                          uint32_t height,
+                                          uint32_t stride) override;
     void treeland_capture_frame_v1_flags(uint32_t flags) override;
     void treeland_capture_frame_v1_ready() override;
     void treeland_capture_frame_v1_failed() override;
@@ -51,6 +54,7 @@ class TreeLandCaptureContext : public QObject, public QtWayland::treeland_captur
     Q_OBJECT
 public:
     explicit TreeLandCaptureContext(struct ::treeland_capture_context_v1 *object);
+
     ~TreeLandCaptureContext() override
     {
         releaseCaptureFrame();
@@ -58,7 +62,11 @@ public:
     }
 
     inline QRect captureRegion() const { return m_captureRegion; }
-    inline QtWayland::treeland_capture_context_v1::source_type sourceType() const { return m_sourceType; }
+
+    inline QtWayland::treeland_capture_context_v1::source_type sourceType() const
+    {
+        return m_sourceType;
+    }
 
     QPointer<TreeLandCaptureFrame> frame();
     void selectSource(uint32_t sourceHint, bool freeze, bool withCursor, ::wl_surface *mask);
@@ -69,7 +77,11 @@ Q_SIGNALS:
     void sourceFailed(uint32_t reason);
 
 protected:
-    void treeland_capture_context_v1_source_ready(int32_t region_x, int32_t region_y, uint32_t region_width, uint32_t region_height, uint32_t source_type) override;
+    void treeland_capture_context_v1_source_ready(int32_t region_x,
+                                                  int32_t region_y,
+                                                  uint32_t region_width,
+                                                  uint32_t region_height,
+                                                  uint32_t source_type) override;
     void treeland_capture_context_v1_source_failed(uint32_t reason) override;
 
 private:
@@ -81,20 +93,21 @@ private:
 class TreeLandCaptureManager;
 void destruct_treeland_capture_manager(TreeLandCaptureManager *manager);
 
-class TreeLandCaptureManager : public QWaylandClientExtensionTemplate<TreeLandCaptureManager, destruct_treeland_capture_manager>,
-                               public QtWayland::treeland_capture_manager_v1
+class TreeLandCaptureManager
+    : public QWaylandClientExtensionTemplate<TreeLandCaptureManager,
+                                             destruct_treeland_capture_manager>,
+      public QtWayland::treeland_capture_manager_v1
 {
     Q_OBJECT
 public:
     explicit TreeLandCaptureManager(QObject *parent = nullptr)
-        : QWaylandClientExtensionTemplate<TreeLandCaptureManager, destruct_treeland_capture_manager>(1)
+        : QWaylandClientExtensionTemplate<TreeLandCaptureManager,
+                                          destruct_treeland_capture_manager>(1)
         , QtWayland::treeland_capture_manager_v1()
-    { }
-
-    ~TreeLandCaptureManager() override
     {
-        destroy();
     }
+
+    ~TreeLandCaptureManager() override { destroy(); }
 
     QPointer<TreeLandCaptureContext> getContext();
     void releaseCaptureContext(QPointer<TreeLandCaptureContext> context);

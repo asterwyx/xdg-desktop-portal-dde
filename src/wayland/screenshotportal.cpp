@@ -1,25 +1,27 @@
 // SPDX-FileCopyrightText: 2024 UnionTech Software Technology Co., Ltd.
-//
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "screenshotportal.h"
-#include "protocols/common.h"
-#include "protocols/treelandcapture.h"
 
-#include <QApplication>
-#include <QScreen>
-#include <QPainter>
-#include <QDir>
-#include <QRegion>
-#include <QStandardPaths>
+#include "common.h"
+#include "treelandcapture.h"
 
 #include <private/qwaylandscreen_p.h>
 
+#include <QApplication>
+#include <QDir>
+#include <QPainter>
+#include <QRegion>
+#include <QScreen>
+#include <QStandardPaths>
+
 Q_LOGGING_CATEGORY(portalWayland, "dde.portal.wayland");
-struct ScreenCaptureInfo {
-    QtWaylandClient::QWaylandScreen *screen {nullptr};
-    QPointer<ScreenCopyFrame> capturedFrame {nullptr};
-    QImage capturedImage {};
+
+struct ScreenCaptureInfo
+{
+    QtWaylandClient::QWaylandScreen *screen{ nullptr };
+    QPointer<ScreenshotFrame> capturedFrame{ nullptr };
+    QImage capturedImage{};
 };
 
 static inline QString fullShotFileName(QString format)
@@ -57,7 +59,8 @@ static inline QString fullShotFileName(QString format)
 
     auto saveBasePath = getXdgPicturesDir();
     QDir saveBaseDir(saveBasePath);
-    if (!saveBaseDir.exists()) return "";
+    if (!saveBaseDir.exists())
+        return "";
     QString picName;
     if (format == "PNG") {
         picName = "portal screenshot - " + QDateTime::currentDateTime().toString() + ".png";
@@ -70,14 +73,14 @@ static inline QString fullShotFileName(QString format)
 ScreenshotPortalWayland::ScreenshotPortalWayland(PortalWaylandContext *context)
     : AbstractWaylandPortal(context)
 {
-
 }
 
-uint ScreenshotPortalWayland::PickColor(const QDBusObjectPath &handle,
-                                 const QString &app_id,
-                                 const QString &parent_window, // might just ignore this argument now
-                                 const QVariantMap &options,
-                                 QVariantMap &results)
+uint ScreenshotPortalWayland::PickColor(
+        const QDBusObjectPath &handle,
+        const QString &app_id,
+        const QString &parent_window, // might just ignore this argument now
+        const QVariantMap &options,
+        QVariantMap &results)
 {
     // TODO Implement PickColor
     return 0;
@@ -96,18 +99,21 @@ QString ScreenshotPortalWayland::fullScreenShot()
         auto info = std::make_shared<ScreenCaptureInfo>();
         outputRegion += screen->geometry();
         auto output = screen->output();
-        info->capturedFrame = screenCopyManager->captureOutput(false, output);
+        info->capturedFrame = screenCopyManager->captureOutput<ScreenshotFrame>(false, output);
         info->screen = screen;
         ++pendingCapture;
         captureList.push_back(info);
-        connect(info->capturedFrame, &ScreenCopyFrame::ready, this, [&formatLast, info, &pendingCapture, &eventLoop, this](QImage image) {
-            info->capturedImage = image;
-            formatLast = info->capturedImage.format();
-            if (--pendingCapture == 0) {
-                eventLoop.quit();
-            }
-        });
-        connect(info->capturedFrame, &ScreenCopyFrame::failed, this, [&pendingCapture, &eventLoop]{
+        connect(info->capturedFrame,
+                &ScreenshotFrame::ready,
+                this,
+                [&formatLast, info, &pendingCapture, &eventLoop, this](QImage image) {
+                    info->capturedImage = image;
+                    formatLast = info->capturedImage.format();
+                    if (--pendingCapture == 0) {
+                        eventLoop.quit();
+                    }
+                });
+        connect(info->capturedFrame, &ScreenshotFrame::failed, this, [&pendingCapture, &eventLoop] {
             if (--pendingCapture == 0) {
                 eventLoop.quit();
             }
@@ -132,7 +138,8 @@ QString ScreenshotPortalWayland::fullScreenShot()
     static const char *SaveFormat = "PNG";
     auto saveBasePath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     QDir saveBaseDir(saveBasePath);
-    if (!saveBaseDir.exists()) return "";
+    if (!saveBaseDir.exists())
+        return "";
     QString picName = "portal screenshot - " + QDateTime::currentDateTime().toString() + ".png";
     if (image.save(saveBaseDir.absoluteFilePath(picName), SaveFormat)) {
         return saveBaseDir.absoluteFilePath(picName);
@@ -140,6 +147,7 @@ QString ScreenshotPortalWayland::fullScreenShot()
         return "";
     }
 }
+
 QString ScreenshotPortalWayland::captureInteractively()
 {
     auto captureManager = context()->treelandCaptureManager();
@@ -147,12 +155,13 @@ QString ScreenshotPortalWayland::captureInteractively()
     if (!captureContext) {
         return "";
     }
-    captureContext->selectSource(QtWayland::treeland_capture_context_v1::source_type_output
-                                         | QtWayland::treeland_capture_context_v1::source_type_window
-                                         | QtWayland::treeland_capture_context_v1::source_type_region
-                                 ,true
-                                 , false
-                                 ,nullptr);
+    captureContext->selectSource(
+            QtWayland::treeland_capture_context_v1::source_type_output
+                    | QtWayland::treeland_capture_context_v1::source_type_window
+                    | QtWayland::treeland_capture_context_v1::source_type_region,
+            true,
+            false,
+            nullptr);
     QEventLoop loop;
     connect(captureContext, &TreeLandCaptureContext::sourceReady, &loop, &QEventLoop::quit);
     loop.exec();
@@ -164,10 +173,12 @@ QString ScreenshotPortalWayland::captureInteractively()
     });
     connect(frame, &TreeLandCaptureFrame::failed, &loop, &QEventLoop::quit);
     loop.exec();
-    if (result.isNull()) return "";
+    if (result.isNull())
+        return "";
     auto saveBasePath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     QDir saveBaseDir(saveBasePath);
-    if (!saveBaseDir.exists()) return "";
+    if (!saveBaseDir.exists())
+        return "";
     QString picName = "portal screenshot - " + QDateTime::currentDateTime().toString() + ".png";
     if (result.save(saveBaseDir.absoluteFilePath(picName), "PNG")) {
         return saveBaseDir.absoluteFilePath(picName);
@@ -177,10 +188,10 @@ QString ScreenshotPortalWayland::captureInteractively()
 }
 
 uint ScreenshotPortalWayland::Screenshot(const QDBusObjectPath &handle,
-                                  const QString &app_id,
-                                  const QString &parent_window,
-                                  const QVariantMap &options,
-                                  QVariantMap &results)
+                                         const QString &app_id,
+                                         const QString &parent_window,
+                                         const QVariantMap &options,
+                                         QVariantMap &results)
 {
     if (options["modal"].toBool()) {
         // TODO if modal, we should block parent_window
@@ -194,6 +205,7 @@ uint ScreenshotPortalWayland::Screenshot(const QDBusObjectPath &handle,
     if (filePath.isEmpty()) {
         return 1;
     }
-    results.insert(QStringLiteral("uri"), QUrl::fromLocalFile(filePath).toString(QUrl::FullyEncoded));
+    results.insert(QStringLiteral("uri"),
+                   QUrl::fromLocalFile(filePath).toString(QUrl::FullyEncoded));
     return 0;
 }

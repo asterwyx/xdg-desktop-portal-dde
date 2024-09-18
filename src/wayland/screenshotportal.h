@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: 2024 UnionTech Software Technology Co., Ltd.
-//
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -15,7 +14,7 @@ class ScreenshotPortalWayland : public AbstractWaylandPortal
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.Screenshot")
 
 public:
-    ScreenshotPortalWayland(PortalWaylandContext *context);
+    explicit ScreenshotPortalWayland(PortalWaylandContext *context);
 
     QString fullScreenShot();
     QString captureInteractively();

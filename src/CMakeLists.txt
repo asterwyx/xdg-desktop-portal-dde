@@ -6,6 +6,10 @@ find_package(
     Widgets
     WaylandClient)
 find_package(Qt6WaylandScannerTools REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_get_variable(XdpInterfacesDir xdg-desktop-portal interfaces_dir)
+
+
 
 set_source_files_properties(
                       ${CMAKE_SOURCE_DIR}/misc/org.freedesktop.Notifications.xml
@@ -60,6 +64,8 @@ set(SRC
     lockdown.cpp
     secret.h
     secret.cpp
+    session.h
+    session.cpp
     request.h
     request.cpp
     dbushelpers.h
